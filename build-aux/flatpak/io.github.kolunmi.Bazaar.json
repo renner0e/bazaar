@@ -81,8 +81,8 @@
           "sources": [
             {
               "type": "archive",
-              "url": "https://gitlab.gnome.org/GNOME/libdex/-/archive/0.11.1/libdex-0.11.1.tar.gz",
-              "sha256": "a1702bc063b7004515d32e24692790d64383902542b2ee6e3b4a7a43770432e7",
+              "url": "https://gitlab.gnome.org/GNOME/libdex/-/archive/1.0.0/libdex-1.0.0.tar.gz",
+              "sha256": "b36185e2a51f7b605b67dbea889ee5a487009b10c4ffe4ee57f740e3b746e39c",
               "x-checker-data": {
                 "type": "anitya",
                 "project-id": 328356,
