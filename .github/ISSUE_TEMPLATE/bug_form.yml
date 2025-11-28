@@ -49,6 +49,19 @@ body:
       required: true
 
   - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware
+      description: |
+        If you are reporting performance issues or crashes then please fill this out.
+      placeholder: |
+        CPU: Ryzen 5 7600
+        GPU: RX 6750 XT
+        RAM: 16GB
+    validations:
+      required: false
+
+  - type: textarea
     id: extra-context
     attributes:
       label: Extra information or context
