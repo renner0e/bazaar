@@ -38,8 +38,10 @@ body:
   - type: textarea
     id: flatpak-remotes
     attributes:
-      label: Output of `flatpak remotes`
-      description: Configured Flatpak Remotes. Currently there are issues with user remotes.
+      label: Configured Flatpak Remotes
+      description: |
+        Currently there are issues with user remotes.
+        Please run `flatpak remotes`.
       placeholder: |
         Name                       Options
         flathub                    system
