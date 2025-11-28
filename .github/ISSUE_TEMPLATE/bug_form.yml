@@ -35,6 +35,17 @@ body:
       required: true
 
   - type: textarea
+    id: flatpak-remotes
+    attributes:
+      label: Output of `flatpak remotes`
+      description: Configured Flatpak Remotes. Currently there are issues with user remotes.
+      placeholder: |
+        Name                       Options
+        flathub                    system
+    validations:
+      required: true
+
+  - type: textarea
     id: extra-context
     attributes:
       label: Extra information or context
