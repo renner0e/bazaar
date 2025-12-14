@@ -15,7 +15,7 @@ jobs:
 
   flatpak:
     name: "Flatpak"
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm' }}
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
       options: --privileged
