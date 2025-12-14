@@ -14,10 +14,14 @@ jobs:
 
   flatpak:
     name: "Flatpak"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || 'ubuntu-latest-arm' }}
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-49
       options: --privileged
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: ["amd64, arm64"]
     steps:
     - uses: actions/checkout@v4
       with:
