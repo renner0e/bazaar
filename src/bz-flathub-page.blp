@@ -32,6 +32,15 @@ template $BzFlathubPage: Adw.Bin {
           child: Adw.StatusPage {
             icon-name: "connected-squares-x";
             title: _("Offline");
+            description: _("Flathub returned an error");
+
+            child: Button {
+              styles ["pill"]
+              halign: center;
+              sensitive: bind $invert_boolean(template.state as <$BzStateInfo>.syncing as <bool>) as <bool>;
+              label: _("Retry Flathub Connection");
+              action-name: "app.sync-remotes";
+            };
           };
         }
 
@@ -376,7 +385,7 @@ template $BzFlathubPage: Adw.Bin {
                           }
 
                           Label {
-                            label: _("We ♥ Games");
+                            label: _("We​ ♥​ Games");
                             halign: center;
                             justify: center;
                             wrap: true;
@@ -478,6 +487,9 @@ template $BzFlathubPage: Adw.Bin {
           otg_padding_box.margin-start: 6;
           otg_padding_box.margin-end: 6;
           otg_padding_box.margin-bottom: 6;
+          gaming_padding_box.margin-start: 6;
+          gaming_padding_box.margin-end: 6;
+          gaming_padding_box.margin-bottom: 6;
           section_toggles.homogeneous: false;
           section_trending.compact: true;
           section_popular.compact: true;
