@@ -32,6 +32,7 @@
 #include "bz-env.h"
 #include "bz-error.h"
 #include "bz-flathub-page.h"
+#include "bz-flatpak-entry.h"
 #include "bz-full-view.h"
 #include "bz-global-progress.h"
 #include "bz-hooks.h"
@@ -75,6 +76,7 @@ enum
   PROP_0,
 
   PROP_STATE,
+  PROP_COMPACT,
 
   LAST_PROP
 };
@@ -165,6 +167,9 @@ bz_window_get_property (GObject    *object,
     {
     case PROP_STATE:
       g_value_set_object (value, self->state);
+      break;
+    case PROP_COMPACT:
+      g_value_set_boolean (value, self->breakpoint_applied);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -312,6 +317,7 @@ breakpoint_apply_cb (BzWindow      *self,
   self->breakpoint_applied = TRUE;
 
   gtk_widget_add_css_class (GTK_WIDGET (self), "narrow");
+  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_COMPACT]);
 }
 
 static void
@@ -321,6 +327,7 @@ breakpoint_unapply_cb (BzWindow      *self,
   self->breakpoint_applied = FALSE;
 
   gtk_widget_remove_css_class (GTK_WIDGET (self), "narrow");
+  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_COMPACT]);
 }
 
 static void
@@ -368,10 +375,10 @@ static char *
 format_title (gpointer    object,
               const char *title)
 {
-  if (title == NULL || *title == '\0' || g_strcmp0 (title, _("Bazaar")) == 0)
-    return g_strdup (_("Bazaar"));
+  if (title == NULL || *title == '\0' || g_strcmp0 (title, _ ("Bazaar")) == 0)
+    return g_strdup (_ ("Bazaar"));
   /* Translators: %s is the title of the current page */
-  return g_strdup_printf (_("Bazaar — %s"), title);
+  return g_strdup_printf (_ ("Bazaar — %s"), title);
 }
 
 static BzEntryGroup *
@@ -575,6 +582,74 @@ action_open_library (GtkWidget  *widget,
   bz_library_page_reset_search (self->library_page);
 }
 
+static DexFuture *
+launch_group_fiber (BzEntryGroup *group)
+{
+  g_autoptr (GError) local_error = NULL;
+  g_autoptr (GListStore) store   = NULL;
+  GtkWidget   *window            = NULL;
+  BzStateInfo *state             = NULL;
+
+  state  = bz_state_info_get_default ();
+  window = GTK_WIDGET (gtk_application_get_active_window (
+      GTK_APPLICATION (g_application_get_default ())));
+
+  store = dex_await_object (
+      bz_entry_group_dup_all_into_store (group), &local_error);
+  if (store == NULL)
+    {
+      if (window != NULL)
+        bz_show_error_for_widget (window, _ ("Failed to launch application"), local_error->message);
+      return dex_future_new_for_error (g_steal_pointer (&local_error));
+    }
+
+  for (guint i = 0; i < g_list_model_get_n_items (G_LIST_MODEL (store)); i++)
+    {
+      g_autoptr (BzEntry) entry = NULL;
+
+      entry = g_list_model_get_item (G_LIST_MODEL (store), i);
+      if (BZ_IS_FLATPAK_ENTRY (entry) && bz_entry_is_installed (entry))
+        {
+          gboolean result = bz_flatpak_entry_launch (
+              BZ_FLATPAK_ENTRY (entry),
+              BZ_FLATPAK_INSTANCE (bz_state_info_get_backend (state)),
+              &local_error);
+
+          if (!result && window != NULL)
+            bz_show_error_for_widget (window, _ ("Failed to launch application"), local_error->message);
+
+          return result ? dex_future_new_true () : dex_future_new_for_error (g_steal_pointer (&local_error));
+        }
+    }
+
+  return dex_future_new_false ();
+}
+
+static void
+action_launch_group (GtkWidget  *widget,
+                     const char *action_name,
+                     GVariant   *parameter)
+{
+  BzWindow   *self               = BZ_WINDOW (widget);
+  const char *id                 = NULL;
+  g_autoptr (BzEntryGroup) group = NULL;
+
+  id    = g_variant_get_string (parameter, NULL);
+  group = bz_application_map_factory_convert_one (
+      bz_state_info_get_application_factory (self->state),
+      gtk_string_object_new (id));
+
+  if (group == NULL)
+    return;
+
+  dex_future_disown (dex_scheduler_spawn (
+      dex_scheduler_get_default (),
+      bz_get_dex_stack_size (),
+      (DexFiberFunc) launch_group_fiber,
+      g_object_ref (group),
+      g_object_unref));
+}
+
 static void
 action_permissions (GtkWidget  *widget,
                     const char *action_name,
@@ -612,6 +687,12 @@ bz_window_class_init (BzWindowClass *klass)
           NULL, NULL,
           BZ_TYPE_STATE_INFO,
           G_PARAM_READABLE);
+
+  props[PROP_COMPACT] =
+      g_param_spec_boolean (
+          "compact",
+          NULL, NULL, FALSE,
+          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS | G_PARAM_EXPLICIT_NOTIFY);
 
   g_object_class_install_properties (object_class, LAST_PROP, props);
 
@@ -657,6 +738,7 @@ bz_window_class_init (BzWindowClass *klass)
   gtk_widget_class_install_action (widget_class, "window.addons-group", "s", action_addons_group);
   gtk_widget_class_install_action (widget_class, "window.bulk-install", NULL, action_bulk_install);
   gtk_widget_class_install_action (widget_class, "window.permissions", "s", action_permissions);
+  gtk_widget_class_install_action (widget_class, "window.launch-group", "s", action_launch_group);
 
   gtk_widget_class_add_binding_action (widget_class, GDK_KEY_d, GDK_CONTROL_MASK, "window.open-library", NULL);
   gtk_widget_class_add_binding_action (widget_class, GDK_KEY_w, GDK_CONTROL_MASK, "window.close", NULL);
