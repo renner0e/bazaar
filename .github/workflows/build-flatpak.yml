@@ -9,6 +9,14 @@ on:
       - "translators.sh"
       - ".github/ISSUE_TEMPLATE/**"
 
+env:
+  NAME: bazaar
+  ID: io.github.kolunmi.Bazaar
+  MANIFEST_PATH: build-aux/flatpak/io.github.kolunmi.Bazaar.json
+  # set by the flatpak-github-actions
+  FLATPAK_BUILD_REPO: repo
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+
 name: CI Build Flatpak
 jobs:
 
@@ -32,8 +40,17 @@ jobs:
         submodules: recursive
     - uses: flatpak/flatpak-github-actions/flatpak-builder@92ae9851ad316786193b1fd3f40c4b51eb5cb101 # v6.6
       with:
-        bundle: Bazaar.flatpak
-        manifest-path: build-aux/flatpak/io.github.kolunmi.Bazaar.json
+        bundle: ${{ env.NAME }}.flatpak
+        manifest-path: ${{ env.MANIFEST_PATH }}
         cache-key: flatpak-builder-046f9ec
         arch: ${{ matrix.variant.arch }}
         verbose: true
+
+    - uses: flatpak/flatpak-github-actions/flat-manager@v6
+      name: "Deploy"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        repository: ${{ env.NAME }}-ci
+        flat-manager-url: https://${{ env.NAME }}.github.io/${{ github.repository_owner }}
+        token: ${{ env.GH_TOKEN }}
