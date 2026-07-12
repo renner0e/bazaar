@@ -54,7 +54,8 @@ jobs:
         manifest-path: build-aux/flatpak/io.github.kolunmi.Bazaar.json
         # caching is broken upstream
         # https://github.com/flatpak/flatpak-github-actions/issues/239
-        cache: false
+        # this is only true because we need to call fb with --ccache, this will upload useless cache
+        cache: true
         restore-cache: false
         arch: ${{ matrix.variant.arch }}
         verbose: true
